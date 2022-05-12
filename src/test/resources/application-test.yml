@@ -1,0 +1,10 @@
+spring:
+  datasource:
+    url: jdbc:clickhouse://${embedded.clickhouse.host}:${embedded.clickhouse.port}/${embedded.clickhouse.schema}
+    password: ${embedded.clickhouse.password}
+    username: ${embedded.clickhouse.user}
+    driver-class-name: com.clickhouse.jdbc.ClickHouseDriver
+  redis:
+    host: ${embedded.redis.host}
+    port: ${embedded.redis.port}
+    password: ${embedded.redis.password}
