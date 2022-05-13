@@ -19,76 +19,81 @@
  */
 package liquibase.ext.clickhouse.database;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
-
+import com.clickhouse.jdbc.ClickHouseDriver;
 import liquibase.database.AbstractJdbcDatabase;
 import liquibase.database.DatabaseConnection;
 import liquibase.exception.DatabaseException;
-import ru.yandex.clickhouse.ClickHouseDriver;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 public class ClickHouseDatabase extends AbstractJdbcDatabase {
 
-  private static final String DATABASE_NAME = "ClickHouse";
-  private static final int DEFAULT_PORT = 8123;
-  private static final String DRIVER_CLASS_NAME = ClickHouseDriver.class.getName();
-  public static final String CURRENT_DATE_TIME_FUNCTION =
-      "toDateTime64('"
-          + new SimpleDateFormat("yyyy.MM.dd HH:mm:ss.SSS").format(new Date())
-          + "',3)";
+    public static final String CURRENT_DATE_TIME_FUNCTION =
+            "toDateTime64('"
+                    + new SimpleDateFormat("yyyy.MM.dd HH:mm:ss.SSS").format(new Date())
+                    + "',3)";
+    private static final String DATABASE_NAME = "ClickHouse";
+    private static final int DEFAULT_PORT = 8123;
+    private static final String DRIVER_CLASS_NAME = ClickHouseDriver.class.getName();
 
-  public ClickHouseDatabase() {
-    super();
-    this.setCurrentDateTimeFunction(CURRENT_DATE_TIME_FUNCTION);
-  }
+    public ClickHouseDatabase() {
+        super();
+        this.setCurrentDateTimeFunction(CURRENT_DATE_TIME_FUNCTION);
+    }
 
-  @Override
-  public int getPriority() {
-    return PRIORITY_DATABASE;
-  }
+    @Override
+    public int getPriority() {
+        return PRIORITY_DATABASE;
+    }
 
-  @Override
-  protected String getDefaultDatabaseProductName() {
-    return DATABASE_NAME;
-  }
+    @Override
+    protected String getDefaultDatabaseProductName() {
+        return DATABASE_NAME;
+    }
 
-  @Override
-  public boolean isCorrectDatabaseImplementation(DatabaseConnection conn) throws DatabaseException {
-    return DATABASE_NAME.equals(conn.getDatabaseProductName());
-  }
+    @Override
+    public boolean isCorrectDatabaseImplementation(DatabaseConnection conn) throws DatabaseException {
+        return DATABASE_NAME.equals(conn.getDatabaseProductName());
+    }
 
-  @Override
-  public String getDefaultDriver(String url) {
-    return url != null && url.startsWith("jdbc:clickhouse") ? DRIVER_CLASS_NAME : null;
-  }
+    @Override
+    public String getDefaultDriver(String url) {
+        return url != null && url.startsWith("jdbc:clickhouse") ? DRIVER_CLASS_NAME : null;
+    }
 
-  @Override
-  public String getShortName() {
-    return "clickhouse";
-  }
+    @Override
+    public String getShortName() {
+        return "clickhouse";
+    }
 
-  @Override
-  public Integer getDefaultPort() {
-    return DEFAULT_PORT;
-  }
+    @Override
+    public Integer getDefaultPort() {
+        return DEFAULT_PORT;
+    }
 
-  @Override
-  public boolean supportsInitiallyDeferrableColumns() {
-    return false;
-  }
+    @Override
+    public boolean supportsInitiallyDeferrableColumns() {
+        return false;
+    }
 
-  @Override
-  public boolean supportsTablespaces() {
-    return false;
-  }
+    @Override
+    public boolean supportsTablespaces() {
+        return false;
+    }
 
-  @Override
-  public boolean supportsSequences() {
-    return false;
-  }
+    @Override
+    public boolean supportsSequences() {
+        return false;
+    }
 
-  @Override
-  public boolean supportsSchemas() {
-    return false;
-  }
+    @Override
+    public boolean supportsSchemas() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsCatalogs() {
+        return false;
+    }
 }

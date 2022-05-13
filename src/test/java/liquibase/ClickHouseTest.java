@@ -19,111 +19,46 @@
  */
 package liquibase;
 
-import java.sql.Connection;
-
-import liquibase.database.Database;
-import liquibase.database.DatabaseFactory;
-import liquibase.database.jvm.JdbcConnection;
-import liquibase.resource.ClassLoaderResourceAccessor;
-import liquibase.resource.ResourceAccessor;
+import lombok.val;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.containers.ClickHouseContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.shaded.org.apache.commons.io.output.NullWriter;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-@Testcontainers
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+@SpringBootTest
+@ActiveProfiles("test")
+@ExtendWith(SpringExtension.class)
 public class ClickHouseTest {
 
-  @Container
-  private static ClickHouseContainer clickHouseContainer =
-      new ClickHouseContainer("yandex/clickhouse-server:20.3");
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
-  @Test
-  void canInitializeLiquibaseSchema() {
-    runLiquibase("empty-changelog.xml", (liquibase, database) -> liquibase.update(""));
-  }
-
-  @Test
-  void canExecuteChangelog() {
-    runLiquibase(
-        "changelog.xml",
-        (liquibase, database) -> {
-          liquibase.update("");
-          liquibase.update(""); // Test that successive updates are working
-        });
-  }
-
-  @Test
-  void canRollbackChangelog() {
-    runLiquibase(
-        "changelog.xml",
-        (liquibase, database) -> {
-          liquibase.update("");
-          liquibase.rollback(2, "");
-        });
-  }
-
-  @Test
-  void canTagDatabase() {
-    runLiquibase(
-        "changelog.xml",
-        (liquibase, database) -> {
-          liquibase.update("");
-          liquibase.tag("testTag");
-        });
-  }
-
-  @Test
-  void canValidate() {
-    runLiquibase("changelog.xml", (liquibase, database) -> liquibase.validate());
-  }
-
-  @Test
-  void canListLocks() {
-    runLiquibase("changelog.xml", (liquibase, database) -> liquibase.listLocks());
-  }
-
-  @Test
-  void canSyncChangelog() {
-    runLiquibase("changelog.xml", (liquibase, database) -> liquibase.changeLogSync(""));
-  }
-
-  @Test
-  void canForceReleaseLocks() {
-    runLiquibase("changelog.xml", (liquibase, database) -> liquibase.forceReleaseLocks());
-  }
-
-  @Test
-  void canReportStatus() {
-    runLiquibase(
-        "changelog.xml",
-        (liquibase, database) -> liquibase.reportStatus(true, "", new NullWriter()));
-  }
-
-  @Test
-  void canMarkChangeSetRan() {
-    runLiquibase("changelog.xml", (liquibase, database) -> liquibase.markNextChangeSetRan(""));
-  }
-
-  private void runLiquibase(
-      String changelog, ThrowingBiConsumer<Liquibase, Database> liquibaseAction) {
-    DatabaseFactory dbFactory = DatabaseFactory.getInstance();
-    ResourceAccessor resourceAccessor = new ClassLoaderResourceAccessor();
-
-    try {
-      Connection connection = clickHouseContainer.createConnection("");
-      JdbcConnection jdbcConnection = new JdbcConnection(connection);
-      Database database = dbFactory.findCorrectDatabaseImplementation(jdbcConnection);
-      Liquibase liquibase = new Liquibase(changelog, resourceAccessor, database);
-      liquibaseAction.accept(liquibase, database);
-    } catch (Exception e) {
-      throw new RuntimeException(e);
+    @Test
+    @DisplayName("Should successfully run liquibase migrations")
+    void canInitializeLiquibase() {
+        val result = jdbcTemplate.query("SELECT * FROM test", new TestModelRowMapper());
+        assertThat(result)
+                .containsExactlyInAnyOrder(new TestModel(1, "foo"), new TestModel(2, "bar"));
     }
-  }
 
-  @FunctionalInterface
-  private interface ThrowingBiConsumer<T1, T2> {
-    void accept(T1 t1, T2 t2) throws java.lang.Exception;
-  }
+    private record TestModel(Integer id, String description) {
+    }
+
+    private static class TestModelRowMapper implements RowMapper<TestModel> {
+        @Override
+        public TestModel mapRow(ResultSet rs, int rowNum) throws SQLException {
+            return new TestModel(rs.getInt("ID"), rs.getString("DESC"));
+        }
+    }
+
 }

@@ -1,0 +1,8 @@
+apply plugin: 'checkstyle'
+
+checkstyle {
+    toolVersion = '9.1'
+    checkstyleMain.config = resources.text.fromFile("$buildDir/checkstyle/checkstyle.xml")
+    checkstyleTest.config = resources.text.fromFile("$buildDir/checkstyle/checkstyle-test.xml")
+    ignoreFailures = false
+}

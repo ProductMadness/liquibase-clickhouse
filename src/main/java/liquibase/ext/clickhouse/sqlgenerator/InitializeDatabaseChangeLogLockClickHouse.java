@@ -19,50 +19,48 @@
  */
 package liquibase.ext.clickhouse.sqlgenerator;
 
+import liquibase.database.Database;
 import liquibase.ext.clickhouse.database.ClickHouseDatabase;
 import liquibase.ext.clickhouse.params.ClusterConfig;
 import liquibase.ext.clickhouse.params.ParamsLoader;
-
-import liquibase.database.Database;
 import liquibase.sql.Sql;
 import liquibase.sqlgenerator.SqlGeneratorChain;
 import liquibase.sqlgenerator.core.InitializeDatabaseChangeLogLockTableGenerator;
 import liquibase.statement.core.InitializeDatabaseChangeLogLockTableStatement;
 
 public class InitializeDatabaseChangeLogLockClickHouse
-    extends InitializeDatabaseChangeLogLockTableGenerator {
+        extends InitializeDatabaseChangeLogLockTableGenerator {
 
-  @Override
-  public int getPriority() {
-    return PRIORITY_DATABASE;
-  }
+    @Override
+    public int getPriority() {
+        return PRIORITY_DATABASE;
+    }
 
-  @Override
-  public boolean supports(
-      InitializeDatabaseChangeLogLockTableStatement statement, Database database) {
-    return database instanceof ClickHouseDatabase;
-  }
+    @Override
+    public boolean supports(
+            InitializeDatabaseChangeLogLockTableStatement statement, Database database) {
+        return database instanceof ClickHouseDatabase;
+    }
 
-  @Override
-  public Sql[] generateSql(
-      InitializeDatabaseChangeLogLockTableStatement statement,
-      Database database,
-      SqlGeneratorChain sqlGeneratorChain) {
-    ClusterConfig properties = ParamsLoader.getLiquibaseClickhouseProperties();
+    @Override
+    public Sql[] generateSql(
+            InitializeDatabaseChangeLogLockTableStatement statement,
+            Database database,
+            SqlGeneratorChain sqlGeneratorChain) {
+        ClusterConfig properties = ParamsLoader.getLiquibaseClickhouseProperties();
 
-    String clearDatabaseQuery =
-        String.format(
-            "ALTER TABLE %s.%s "
-                + SqlGeneratorUtil.generateSqlOnClusterClause(properties)
-                + "DELETE WHERE 1",
-            database.getDefaultSchemaName(),
-            database.getDatabaseChangeLogLockTableName());
+        String clearDatabaseQuery =
+                String.format(
+                        "ALTER TABLE %s "
+                                + SqlGeneratorUtil.generateSqlOnClusterClause(properties)
+                                + "DELETE WHERE 1 SETTINGS mutations_sync = 2",
+                        database.getDatabaseChangeLogLockTableName());
 
-    String initLockQuery =
-        String.format(
-            "INSERT INTO %s.%s (ID, LOCKED) VALUES (1, 0)",
-            database.getDefaultSchemaName(), database.getDatabaseChangeLogLockTableName());
+        String initLockQuery =
+                String.format(
+                        "INSERT INTO %s (ID, LOCKED) VALUES (1, 0)",
+                        database.getDatabaseChangeLogLockTableName());
 
-    return SqlGeneratorUtil.generateSql(database, clearDatabaseQuery, initLockQuery);
-  }
+        return SqlGeneratorUtil.generateSql(database, clearDatabaseQuery, initLockQuery);
+    }
 }

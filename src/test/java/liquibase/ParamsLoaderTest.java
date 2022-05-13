@@ -21,24 +21,25 @@ package liquibase;
 
 import liquibase.ext.clickhouse.params.ClusterConfig;
 import liquibase.ext.clickhouse.params.ParamsLoader;
-
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class ParamsLoaderTest {
 
-  @Test
-  void loadParams() {
-    ClusterConfig params = ParamsLoader.getLiquibaseClickhouseProperties("testLiquibaseClickhouse");
-    assert (params != null);
-    assert (params.getClusterName().equals("Cluster1"));
-    assert (params.getTableZooKeeperPathPrefix().equals("Path1"));
-    assert (params.getTableReplicaName().equals("Replica1"));
-  }
+    @Test
+    void loadParams() {
+        ClusterConfig params = ParamsLoader.getLiquibaseClickhouseProperties("testLiquibaseClickhouse");
+        assertNotNull(params);
+        assertEquals("Cluster1", params.getClusterName());
+        assertEquals("Path1", params.getTableZooKeeperPathPrefix());
+        assertEquals("Replica1", params.getTableReplicaName());
+    }
 
-  @Test
-  void loadBrokenParams() {
-    ClusterConfig params =
-        ParamsLoader.getLiquibaseClickhouseProperties("testLiquibaseClickhouseBroken");
-    assert (params == null);
-  }
+    @Test
+    void loadBrokenParams() {
+        ClusterConfig params = ParamsLoader.getLiquibaseClickhouseProperties("testLiquibaseClickhouseBroken");
+        assertNotNull(params);
+    }
 }
