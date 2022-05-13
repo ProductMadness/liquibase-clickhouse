@@ -27,3 +27,7 @@ cluster {
 In this mode, liquibase will create its own tables as replicated.<br/>
 All changes in these files will be replicated on the entire cluster.<br/>
 Your updates should also affect the entire cluster either by using ON CLUSTER clause, or by using replicated tables.
+
+## What new in this fork
+- Added support for the latest ClickHouse driver version
+- Implemented locking via Redis, since ClickHouse doesn't support it at all
