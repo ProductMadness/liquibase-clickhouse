@@ -1,77 +1,17 @@
-buildscript {
-    ext {
-        springBootVersion = "2.6.4"
-    }
-}
-
 plugins {
-    id 'org.springframework.boot' version "$springBootVersion"
-    id 'io.spring.dependency-management' version '1.0.11.RELEASE'
-    id 'com.productmadness.versioning' version '0.1.0'
-    id 'com.jfrog.artifactory' version '4.21.0'
-    id 'maven-publish'
-    id 'java-library'
-    id 'checkstyle'
-    id 'jacoco'
-}
-apply from: "gradle/plugins/checkstyle/checkstyle.gradle"
-apply from: "versioning.gradle"
-
-group = 'com.productmadness'
-
-bootJar {
-    enabled = false
-}
-
-jar {
-    enabled = true
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-}
-
-java {
-    withSourcesJar()
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(17)
-    }
-}
-
-configurations {
-    checkstyleApi {
-        transitive false
-    }
-}
-
-repositories {
-    mavenCentral()
-    maven {
-        url "${artifactory_context_url}/${artifactory_libs_repo_key}"
-        credentials {
-            username "${artifactory_user}"
-            password "${artifactory_password}"
-        }
-    }
-    mavenLocal()
+    id 'com.productmadness.java-library' version '1.1.0'
 }
 
 ext {
-    isArtifactoryEnabled = project.hasProperty('artifactory')
-
-    clickhouseJdbcVersion = "0.3.2-patch8"
-    liquibaseVersion = "4.5.0"
-    snakeYamlVersion = "1.28"
-    typesafeConfigVersion = "1.4.1"
-    springCloudVersion = "3.1.1"
-    apacheCommonsVersion = "2.11.0"
-    testcontainversVersion = "2.1.8"
-    checkstyleVersion = "[1.0.0,2.0.0["
+    typesafeConfigVersion = '1.4.1'
 }
 
 dependencies {
-    checkstyleApi "com.productmadness:checkstyle:$checkstyleVersion"
+    checkstyleApi "com.productmadness:checkstyle"
 
-    implementation "com.clickhouse:clickhouse-jdbc:$clickhouseJdbcVersion"
-    implementation "org.liquibase:liquibase-core:$liquibaseVersion"
-    implementation "org.yaml:snakeyaml:$snakeYamlVersion"
+    implementation "com.clickhouse:clickhouse-jdbc"
+    implementation "org.liquibase:liquibase-core"
+    implementation "org.yaml:snakeyaml"
     implementation "com.typesafe:config:$typesafeConfigVersion"
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
@@ -84,109 +24,12 @@ dependencies {
     testCompileOnly 'org.projectlombok:lombok'
     testAnnotationProcessor 'org.projectlombok:lombok'
 
-    testImplementation "commons-io:commons-io:$apacheCommonsVersion"
+    testImplementation "commons-io:commons-io"
     testImplementation 'org.springframework.boot:spring-boot-starter'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-jdbc'
     testImplementation 'org.springframework.boot:spring-boot-autoconfigure'
-    testImplementation "org.springframework.cloud:spring-cloud-starter-bootstrap:$springCloudVersion"
-    testImplementation "com.playtika.testcontainers:embedded-clickhouse:$testcontainversVersion"
-    testImplementation "com.playtika.testcontainers:embedded-redis:$testcontainversVersion"
+    testImplementation "org.springframework.cloud:spring-cloud-starter-bootstrap"
+    testImplementation "com.playtika.testcontainers:embedded-clickhouse"
+    testImplementation "com.playtika.testcontainers:embedded-redis"
 }
-
-test {
-    useJUnitPlatform()
-}
-
-compileJava {
-    dependsOn pullVersion
-}
-
-publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            from components.java
-        }
-    }
-}
-
-if (isArtifactoryEnabled) {
-    artifactory {
-        contextUrl = "${artifactory_context_url}"
-        publish {
-            repository {
-                repoKey = "${artifactory_libs_repo_key}"
-                username = "${artifactory_user}"
-                password = "${artifactory_password}"
-                maven = true
-            }
-            defaults {
-                publications('mavenJava')
-                publishArtifacts = true
-                publishBuildInfo = false
-            }
-        }
-    }
-}
-
-if (!isArtifactoryEnabled) {
-    build.finalizedBy(publishToMavenLocal)
-}
-
-def qualityGateExcludeList = [
-        '**/entity/**',
-        '**/dto/**',
-        '**/property/**',
-        '**/config/**',
-        '**/repository/**',
-]
-
-jacocoTestReport {
-    dependsOn test
-    afterEvaluate {
-        classDirectories.setFrom(files(classDirectories.files.collect {
-            fileTree(dir: it, exclude: qualityGateExcludeList)
-        }))
-    }
-
-    reports {
-        xml.enabled = true
-        csv.enabled false
-        html.destination file("${buildDir}/reports/jacoco/jacocoHtml")
-    }
-}
-
-jacocoTestCoverageVerification {
-    afterEvaluate {
-        classDirectories.setFrom(files(classDirectories.files.collect {
-            fileTree(dir: it, exclude: qualityGateExcludeList)
-        }))
-    }
-
-    violationRules {
-        rule {
-            limit {
-                minimum = 0.53
-                counter = 'LINE'
-            }
-        }
-
-        rule {
-            limit {
-                minimum = 0.35
-                counter = 'BRANCH'
-            }
-        }
-    }
-}
-
-check.dependsOn jacocoTestCoverageVerification
-
-task extractCheckstyleConfig(type: Copy) {
-    from zipTree(configurations.checkstyleApi.singleFile).matching {
-        include '*.xml'
-    }
-    into "$buildDir/checkstyle"
-}
-tasks.checkstyleMain.dependsOn extractCheckstyleConfig
-tasks.checkstyleTest.dependsOn extractCheckstyleConfig

@@ -4,7 +4,8 @@ spring:
     password: ${embedded.clickhouse.password}
     username: ${embedded.clickhouse.user}
     driver-class-name: com.clickhouse.jdbc.ClickHouseDriver
-  redis:
-    host: ${embedded.redis.host}
-    port: ${embedded.redis.port}
-    password: ${embedded.redis.password}
+  data:
+    redis:
+      host: ${embedded.redis.host}
+      port: ${embedded.redis.port}
+      password: ${embedded.redis.password}
